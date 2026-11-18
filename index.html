@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAP2000 S2K Curtain Wall Generator</title>
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--ink:#1d2330;--mut:#6b7385;--line:#dde1e8;--acc:#1f5fbf}
+  @media (prefers-color-scheme:dark){:root{--bg:#14171d;--card:#1c2028;--ink:#e6e9ef;--mut:#98a0b0;--line:#2d3340;--acc:#6aa3ff}}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+  header h1{margin:0;font-size:18px}
+  header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+  main{display:grid;grid-template-columns:minmax(340px,480px) 1fr;gap:16px;padding:16px;max-width:1500px;margin:auto}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+  fieldset{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:10px 12px 12px}
+  legend{font-weight:600;padding:0 6px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 12px}
+  label{display:block;font-size:12px;color:var(--mut)}
+  input[type=text],input[type=number],select{width:100%;padding:5px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);font:inherit}
+  .chk{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .chk label{display:flex;align-items:center;gap:4px;color:var(--ink);font-size:13px}
+  .full{grid-column:1/-1}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;position:sticky;top:0;background:var(--bg);padding:4px 0;z-index:2}
+  button{padding:8px 14px;border-radius:6px;border:1px solid var(--acc);background:var(--acc);color:#fff;font:inherit;cursor:pointer}
+  button.sec{background:transparent;color:var(--acc)}
+  textarea{width:100%;height:68vh;font:12px/1.35 ui-monospace,Consolas,monospace;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;white-space:pre;overflow:auto}
+  .stats{font-size:13px;color:var(--mut);margin:6px 0}
+  .warn{font-size:12px;color:var(--mut);margin-top:6px}
+  [hidden]{display:none!important}
+  main>section{min-width:0}
+  :root{--c-mul:#2563eb;--c-tra:#d9731a;--c-wind:#0e8f9c;--c-dead:#7c3aed;--c-sup:#16803c;--c-panel:rgba(31,95,191,.08);--c-bad:#c62828}
+  @media (prefers-color-scheme:dark){:root{--c-mul:#6aa3ff;--c-tra:#f0a35a;--c-wind:#3fd0dc;--c-dead:#b78cff;--c-sup:#4ade80;--c-panel:rgba(106,163,255,.10);--c-bad:#ff6b6b}}
+  .tabs{display:flex;gap:4px;margin:6px 0 8px;flex-wrap:wrap}
+  .tabs button{background:var(--card);color:var(--ink);border:1px solid var(--line);padding:6px 12px}
+  .tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .opts{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:13px;margin-bottom:8px}
+  .opts label{display:flex;align-items:center;gap:4px;color:var(--ink)}
+  .opts input[type=number],.opts select{width:auto}
+  .scr{overflow:auto;margin-bottom:10px}
+  .dr{display:block;width:100%;min-width:680px;max-width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:8px}
+  .dr text{font:10px system-ui,sans-serif;fill:var(--ink)}
+  .dr .mut{fill:var(--mut)}
+  .dr .bad{fill:var(--c-bad);font-weight:700}
+  .dr .panel{fill:var(--c-panel);stroke:var(--line);stroke-width:.8}
+  .dr .grid{stroke:var(--mut);stroke-dasharray:4 4;stroke-width:.7;fill:none}
+  .dr .mul{stroke:var(--c-mul);stroke-width:5;stroke-linecap:round;fill:none}
+  .dr .tra{stroke:var(--c-tra);stroke-width:4;stroke-linecap:round;fill:none}
+  .dr .jt{fill:var(--ink)}
+  .dr .dim line,.dr .dim path{stroke:var(--acc);stroke-width:1;fill:none}
+  .dr .dim text{fill:var(--acc);font-weight:600}
+  .dr .rel{fill:var(--card);stroke:var(--ink);stroke-width:1.4}
+  .dr .axr{stroke:var(--ink);stroke-width:1.4;fill:none}
+  .dr .sup path{fill:none;stroke:var(--c-sup);stroke-width:1.6}
+  .dr .sup circle{fill:var(--card);stroke:var(--c-sup);stroke-width:1.4}
+  .dr .supy circle{fill:var(--card);stroke:var(--c-sup);stroke-width:1.6}
+  .dr .supy path{stroke:var(--c-sup);stroke-width:1.6;fill:none}
+  .dr .wsym circle,.dr .wsym path{fill:none;stroke:var(--c-wind);stroke-width:1.5}
+  .dr .sec{fill-rule:evenodd;fill-opacity:.35;stroke-width:1.6}
+  .dr .secm{fill:var(--c-mul);stroke:var(--c-mul)}
+  .dr .sect{fill:var(--c-tra);stroke:var(--c-tra)}
+  .tbl{border-collapse:collapse;width:100%;font-size:12px;margin:8px 0}
+  .tbl th,.tbl td{border:1px solid var(--line);padding:3px 6px;text-align:right}
+  .tbl th{background:var(--card)}
+  .tbl td:first-child,.tbl th:first-child{text-align:left}
+  .note{font-size:12px;color:var(--mut);margin:4px 0 10px}
+  .secgrid{display:flex;gap:10px;flex-wrap:wrap}
+  .secgrid .dr{flex:1 1 320px;min-width:300px;max-width:420px}
+</style>
+</head>
+<body>
+<header>
+  <h1>SAP2000 .$2k Generator &ndash; Curtain Wall Typical Module</h1>
+  <p>Units: kN, mm, &deg;C. Planar frame-and-panel system in the XZ plane (Y = 0), wind acting along Y. Output follows the SAP2000 text-table (.$2k) format.</p>
+</header>
+<main>
+<section id="inputs">
+
+<fieldset><legend>Model</legend>
+  <div class="row">
+    <div><label>File / model name</label><input type="text" id="name" value="Typ.CW"></div>
+    <div><label>X origin (mm)</label><input type="number" id="x0" value="7000"></div>
+    <div><label>Frame local axis angle (deg)</label><input type="number" id="ang" value="-90"></div>
+  </div>
+</fieldset>
+
+<fieldset><legend>Mullion layout (vertical members)</legend>
+  <div class="row">
+    <div><label>Layout</label><select id="mulMode"><option value="uniform">Uniform spacing</option><option value="custom">Custom bay widths</option></select></div>
+    <div id="mulUniformA"><label>Total facade width (mm)</label><input type="number" step="any" min="1" id="totW" value="4400"></div>
+    <div id="mulUniformB"><label>Mullion spacing, c/c (mm)</label><input type="number" step="any" min="1" id="mulSp" value="1100"></div>
+    <div id="mulUniformC"><label>If width is not a multiple of spacing</label><select id="mulRem"><option value="equal">Equal bays (nearest to spacing)</option><option value="last">Exact spacing, remainder in last bay</option></select></div>
+    <div class="full" id="mulCustom"><label>Bay widths, left to right (mm, comma separated)</label><input type="text" id="bays" value="1100,1100,1100,1100"></div>
+  </div>
+</fieldset>
+
+<fieldset><legend>Transom layout (horizontal members)</legend>
+  <div class="row">
+    <div><label>Layout</label><select id="traMode"><option value="custom">Custom level elevations</option><option value="uniform">Uniform spacing</option></select></div>
+    <div id="traUniformA"><label>Bottom elevation Z (mm)</label><input type="number" step="any" id="z0" value="0"></div>
+    <div id="traUniformB"><label>Total facade height (mm)</label><input type="number" step="any" min="1" id="totH" value="10060"></div>
+    <div id="traUniformC"><label>Transom spacing, c/c (mm)</label><input type="number" step="any" min="1" id="traSp" value="2000"></div>
+    <div id="traUniformD"><label>If height is not a multiple of spacing</label><select id="traRem"><option value="equal">Equal panels (nearest to spacing)</option><option value="last">Exact spacing, remainder in last panel</option></select></div>
+    <div class="full" id="traCustom"><label>Level elevations Z (mm, ascending, comma separated)</label><input type="text" id="levels" value="0,3172,6410,10060"></div>
+  </div>
+  <div class="note" id="gridInfo"></div>
+</fieldset>
+
+<fieldset><legend>Mullion vertical layout (independent of transom spacing)</legend>
+  <div class="row">
+    <div><label>Mullion piece length (end-release locations)</label><select id="pcMode"><option value="levels">Between transom levels (default)</option><option value="uniform">Uniform piece length</option><option value="list">Custom piece lengths</option></select></div>
+    <div id="pcLenBox"><label>Mullion piece length (mm)</label><input type="number" min="1" step="any" id="pcLen" value="3000"></div>
+    <div class="full" id="pcListBox"><label>Piece lengths, bottom to top (mm, comma separated; last piece runs to the top if the sum is shorter)</label><input type="text" id="pcList" value="3000,3000,4060"></div>
+    <div><label>Extra mullion nodes</label><select id="mzMode"><option value="none">None &ndash; only at transom levels</option><option value="spacing">Own vertical spacing</option><option value="list">Custom elevations</option></select></div>
+    <div id="mzSpBox"><label>Mullion node spacing from bottom (mm)</label><input type="number" min="1" step="any" id="mzSp" value="1500"></div>
+    <div class="full" id="mzListBox"><label>Mullion node heights above bottom level (mm, comma separated)</label><input type="text" id="mzList" value="1100,4500"></div>
+  </div>
+  <div class="warn">The mullion is split into extra joints at these heights (fixing points, live-load height, splice or break points) without adding transoms. Extra joints are added to the transom levels, not instead of them. The mullion end releases (moment at J, axial slip at I) are placed at the ends of each mullion piece defined above; every other joint on the mullion is continuous, including transom joints inside a piece.</div>
+  <div class="note" id="mzInfo"></div>
+</fieldset>
+
+<fieldset><legend>Mullion section (6063-T6)</legend>
+  <div class="row3" id="mulBlock"></div>
+</fieldset>
+
+<fieldset><legend>Transom section (6063-T6)</legend>
+  <div class="row3" id="traBlock"></div>
+</fieldset>
+
+<fieldset><legend>End releases</legend>
+  <div class="row">
+    <div><label>Mullion</label>
+      <select id="mulRel">
+        <option value="jmoment" selected>Moment release at J (top)</option>
+        <option value="both">Pinned both ends</option>
+        <option value="none">Continuous</option>
+      </select></div>
+    <div><label>Transom</label>
+      <select id="traRel">
+        <option value="both" selected>Pinned both ends</option>
+        <option value="jmoment">Moment release at J</option>
+        <option value="none">Continuous</option>
+      </select></div>
+  </div>
+  <div class="chk">
+    <label><input type="checkbox" id="mulAx" checked> Mullion axial release at I (slip)</label>
+    <label><input type="checkbox" id="traAx" checked> Transom axial release at I</label>
+  </div>
+</fieldset>
+
+<fieldset><legend>Fixing points (supports)</legend>
+  <div class="row">
+    <div><label>Base fixing type</label><select id="basePre"></select></div>
+    <div><label>Base: fix every Nth mullion</label><input type="number" min="1" step="1" id="baseEvery" value="1"></div>
+    <div class="full"><label>Base restraint joints (custom)</label><div class="chk" id="baseDof"></div></div>
+    <div><label>Anchor fixing type</label><select id="ancPre"></select></div>
+    <div><label>Anchor: fix every Nth mullion</label><input type="number" min="1" step="1" id="ancEvery" value="1"></div>
+    <div><label>Anchor: first fixed mullion no. (1 = left)</label><input type="number" min="1" step="1" id="ancStart" value="1"></div>
+    <div class="full"><label>Anchor restraints (custom)</label><div class="chk" id="ancDof"></div></div>
+    <div class="full"><div class="chk"><label><input type="checkbox" id="fixEnds" checked> Always fix the two end mullions</label></div></div>
+    <div><label>Fixing levels (anchors)</label><select id="ancMode"><option value="ends">1 &ndash; At the ends of the mullion pieces</option><option value="custom">2 &ndash; At custom spacing (not equal)</option></select></div>
+    <div class="full" id="ancCustomBox"><label>Fixing spacings from the bottom (mm, comma separated, unequal allowed &mdash; each value is the distance from the previous fixing)</label><input type="text" id="ancCustom" value="3172,3238,3650"></div>
+  </div>
+  <div class="note" id="fixInfo"></div>
+</fieldset>
+
+<fieldset><legend>Load patterns to include</legend>
+  <div class="chk">
+    <label><input type="checkbox" id="pDEAD" checked> DEAD (self-weight + glass)</label>
+    <label><input type="checkbox" id="pL" checked> LIVE</label>
+    <label><input type="checkbox" id="pT" checked> T+ / T&minus;</label>
+    <label><input type="checkbox" id="pW" checked> WIND (pressure, suction)</label>
+    <label><input type="checkbox" id="pEQ" checked> EQ</label>
+  </div>
+  <div class="warn">Only the checked patterns are written (patterns, cases, loads) and only combinations built from them are generated &mdash; see the Combinations tab.</div>
+</fieldset>
+
+<fieldset><legend>Loads</legend>
+  <div class="row">
+    <div><label>Glass dead load, added to DEAD (kN/m&sup2;)</label><input type="number" step="0.01" min="0" id="dead" value="0.13"></div>
+    <div><label>Setting-block distance a from panel edges (mm)</label><input type="number" step="any" min="0" id="aBlk" value="275"></div>
+    <div><label>Temperature &plusmn; (&deg;C)</label><input type="number" id="temp" value="30"></div>
+    <div><label>Wind pressure Y+ (kPa)</label><input type="number" step="0.01" id="w1p" value="1.81"></div>
+    <div><label>Wind suction Y&minus; (kPa)</label><input type="number" step="0.01" id="w1n" value="1.84"></div>
+    <div><label>LIVE point load on each mullion, P (kN)</label><input type="number" step="0.01" min="0" id="livP" value="1"></div>
+    <div><label>LIVE load height H from bottom (mm)</label><input type="number" step="any" min="0" id="livH" value="1100"></div>
+    <div><label>SAP2000 version stamped in file</label><input type="text" id="sapVer" value="26.3.0"></div>
+    <div><label>Seismic coefficient C</label><input type="number" step="0.01" id="eqC" value="0.07"></div>
+    <div><label>Seismic exponent K</label><input type="number" step="0.1" id="eqK" value="1"></div>
+  </div>
+  <div class="chk">
+    <label><input type="checkbox" id="genASD" checked> ASD combinations</label>
+    <label><input type="checkbox" id="genLRFD" checked> LRFD combinations</label>
+  </div>
+  <div class="warn">Wind sign convention: Y+ is a load toward +Y (area local axis 3 points to &minus;Y, as in the source file). Enter magnitudes in kPa; they are converted to kN/mm&sup2;. Glass dead load: enter kN/m&sup2;; each panel weight (kN/m&sup2; &times; W &times; H) is split into two equal point loads P on the transom at the bottom of the panel, a mm in from the left and right panel edges (a must be &le; W/2 for every bay).  The LIVE pattern is a point load P on every mullion at height H from the bottom, acting toward &minus;Y (same direction as wind suction); set P = 0 to leave it empty so you can add point or area loads in SAP2000.</div>
+</fieldset>
+</section>
+
+<section>
+  <div class="bar">
+    <button id="gen">Generate</button>
+    <button id="dl" class="sec">Download .$2k</button>
+    <button id="cp" class="sec">Copy</button>
+  </div>
+  <div class="stats" id="stats">Press Generate.</div>
+  <div class="opts">
+    <label><input type="checkbox" id="showF" checked> Frame IDs</label>
+    <label><input type="checkbox" id="showJ"> Joint IDs</label>
+    <label><input type="checkbox" id="showA" checked> Area IDs</label>
+    <label><input type="checkbox" id="showR" checked> Releases</label>
+    <label><input type="checkbox" id="showS" checked> Supports</label>
+    <label>X exaggeration <input type="number" id="exag" value="1.6" step="0.1" min="0.2" style="width:62px"></label>
+  </div>
+  <div class="tabs" id="tabs">
+    <button data-t="geom" class="on">Geometry &amp; profiles</button>
+    <button data-t="loads">Loads</button>
+    <button data-t="combos">Combinations</button>
+    <button data-t="secs">Sections</button>
+    <button data-t="text">S2K text</button>
+  </div>
+  <div id="tab-geom" class="scr"></div>
+  <div id="tab-loads" class="scr" hidden></div>
+  <div id="tab-combos" class="scr" hidden></div>
+  <div id="tab-secs" hidden></div>
+  <div id="tab-text" hidden><textarea id="out" spellcheck="false" readonly></textarea></div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ---------- UI scaffolding ----------
+const secDefaults = {
+  mul:{name:'Mullion170',depth:170,width:52,area:1087.98,J:1331945,I33:4206895,I22:497940,AS2:672.9,AS3:341.26,S33:46916.7,S22:19151.5,Z33:60804.4,Z22:21433.5,R33:62.18,R22:21.39},
+  tra:{name:'Transom 170',depth:170,width:52,area:1087.98,J:1331945,I33:4206895,I22:497940,AS2:672.9,AS3:341.26,S33:46916.7,S22:19151.5,Z33:60804.4,Z22:21433.5,R33:62.18,R22:21.39}
+};
+const secFields=[['name','Name','text'],['depth','Depth t3','number'],['width','Width t2','number'],['area','Area','number'],['J','Torsion J','number'],
+ ['I33','I33','number'],['I22','I22','number'],['AS2','AS2','number'],['AS3','AS3','number'],['S33','S33','number'],['S22','S22','number'],
+ ['Z33','Z33','number'],['Z22','Z22','number'],['R33','R33','number'],['R22','R22','number']];
+function buildSecBlock(prefix,target){
+  $(target).innerHTML = secFields.map(([k,l,t])=>
+    `<div><label>${l}</label><input type="${t}" step="any" id="${prefix}_${k}" value="${secDefaults[prefix][k]}"></div>`).join('');
+}
+buildSecBlock('mul','mulBlock'); buildSecBlock('tra','traBlock');
+const dofs=['U1','U2','U3','R1','R2','R3'];
+function dofBlock(prefix,target,on){
+  $(target).innerHTML = dofs.map(d=>`<label><input type="checkbox" id="${prefix}_${d}" ${on.includes(d)?'checked':''}> ${d}</label>`).join('');
+}
+dofBlock('b','baseDof',['U1','U2','U3']);
+dofBlock('a','ancDof',['U2','R3']);
+const FIX_TYPES={
+  custom:['Custom (use checkboxes)',null],
+  dead:['Dead-load bracket (U1 U2 U3)',['U1','U2','U3']],
+  pin:['Pinned in plane + wind (U1 U3 U2)',['U1','U2','U3']],
+  windmom:['Wind tie + rotation (U2 R3)',['U2','R3']],
+  wind:['Wind tie / slotted (U2 only)',['U2']],
+  vert:['Vertical support only (U3)',['U3']],
+  fixed:['Fully fixed (all DOF)',dofs]
+};
+delete FIX_TYPES.pin;
+['basePre','ancPre'].forEach((id,k)=>{
+  $(id).innerHTML=Object.entries(FIX_TYPES).map(([v,x])=>`<option value="${v}">${x[0]}</option>`).join('');
+  $(id).value=k===0?'dead':'windmom';
+  const pre=k===0?'b':'a';
+  $(id).addEventListener('change',()=>{ const t=FIX_TYPES[$(id).value][1]; if(t) dofs.forEach(d=>{$(pre+'_'+d).checked=t.includes(d);}); });
+  dofs.forEach(d=>$(pre+'_'+d).addEventListener('change',()=>{ $(id).value='custom'; }));
+});
+function applyModes(){
+  const mu=$('mulMode').value==='uniform', tu=$('traMode').value==='uniform', am=$('ancMode').value;
+  ['mulUniformA','mulUniformB','mulUniformC'].forEach(i=>$(i).hidden=!mu); $('mulCustom').hidden=mu;
+  ['traUniformA','traUniformB','traUniformC','traUniformD'].forEach(i=>$(i).hidden=!tu); $('traCustom').hidden=tu;
+  $('pcLenBox').hidden=$('pcMode').value!=='uniform'; $('pcListBox').hidden=$('pcMode').value!=='list';
+  $('mzSpBox').hidden=$('mzMode').value!=='spacing'; $('mzListBox').hidden=$('mzMode').value!=='list';
+  $('ancCustomBox').hidden=am!=='custom';
+}
+['mulMode','traMode','ancMode','mzMode','pcMode'].forEach(i=>$(i).addEventListener('change',applyModes));
+applyModes();
+
+// ---------- helpers ----------
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)}));
+const q = s => /[\s"]/.test(s) ? `"${s}"` : s;
+const yn = b => b ? 'Yes' : 'No';
+function num(v){
+  if(v===0) return '0';
+  const a=Math.abs(v);
+  if(a<1e-3||a>=1e9) return v.toExponential().replace('e','E').replace('E+','E');
+  return String(+v.toPrecision(12));
+}
+const csvNums = s => s.split(',').map(x=>x.trim()).filter(x=>x!=='').map(Number);
+const g = id => +$(id).value;
+function everyN(n,every,start,ends){
+  const e=Math.max(1,Math.round(every)||1), s0=Math.max(1,Math.round(start)||1)-1, set=new Set();
+  for(let i=s0;i<n;i+=e) set.add(i);
+  if(ends){ set.add(0); set.add(n-1); }
+  return set;
+}
+function getGrid(){
+  let bays, levels;
+  if($('mulMode').value==='uniform'){
+    const W=g('totW'), sp=g('mulSp');
+    if(!(W>0)||!(sp>0)) throw new Error('Total width and mullion spacing must be positive.');
+    bays=[]; if($('mulRem').value==='equal'){ const n=Math.max(1,Math.round(W/sp)); for(let k=0;k<n;k++) bays.push(+(W/n).toFixed(3)); } else { let r=W; while(r>sp+1e-6){ bays.push(sp); r-=sp; } if(r>1e-6) bays.push(+r.toFixed(3)); }
+  } else bays=csvNums($('bays').value);
+  if($('traMode').value==='uniform'){
+    const z0=g('z0'), H=g('totH'), sp=g('traSp');
+    if(isNaN(z0)||!(H>0)||!(sp>0)) throw new Error('Bottom elevation, total height and transom spacing must be valid (height and spacing positive).');
+    const zt=z0+H; levels=[z0]; if($('traRem').value==='equal'){ const n=Math.max(1,Math.round(H/sp)); for(let k=1;k<=n;k++) levels.push(k===n?zt:+(z0+H*k/n).toFixed(3)); } else { let z=z0; while(zt-z>sp+1e-6){ z+=sp; levels.push(+z.toFixed(3)); } levels.push(zt); }
+  } else levels=csvNums($('levels').value);
+  const nl=levels.length, nc=bays.length+1;
+  const near=(p,q)=>Math.abs(p-q)<1e-6, z0=levels[0], zt=levels[nl-1];
+  let ex=[]; const mzm=$('mzMode').value;
+  if(mzm==='spacing'){ const sp=g('mzSp'); if(!(sp>0)) throw new Error('Mullion node spacing must be positive.'); for(let t=sp;t<zt-z0-1e-6;t+=sp) ex.push(z0+t); }
+  else if(mzm==='list') ex=csvNums($('mzList').value).map(v=>z0+v);
+  ex=ex.filter(z=>z>z0+1e-6&&z<zt-1e-6&&!levels.some(l=>near(l,z)));
+  ex=[...new Set(ex.map(z=>+z.toFixed(3)))].sort((p,q)=>p-q);
+  // mullion pieces (end-release locations)
+  const snap=z=>{ const l=levels.find(v=>near(v,z)); return l!==undefined?l:+z.toFixed(3); };
+  let spl=[]; const pm=$('pcMode').value;
+  if(pm==='uniform'){ const L=g('pcLen'); if(!(L>0)) throw new Error('Mullion piece length must be positive.'); for(let t=L;t<zt-z0-1e-6;t+=L) spl.push(z0+t); }
+  else if(pm==='list'){ const arr=csvNums($('pcList').value); if(!arr.length||arr.some(v=>!(v>0))) throw new Error('Mullion piece lengths must be positive numbers.'); let acc=0; for(const v of arr){ acc+=v; if(acc>zt-z0+1e-6) throw new Error('Mullion piece lengths exceed the facade height ('+(zt-z0)+' mm).'); if(acc<zt-z0-1e-6) spl.push(z0+acc); } }
+  else spl=levels.slice(1,-1);
+  spl=[...new Set(spl.map(snap))].sort((p,q)=>p-q);
+  const pieceZ=[z0,...spl,zt];
+  // fixing (anchor) elevations
+  let anchZ=[]; const am=$('ancMode').value;
+  if(am==='custom'){
+    const arr=csvNums($('ancCustom').value); if(!arr.length||arr.some(v=>!(v>0))) throw new Error('Fixing spacings must be positive numbers.');
+    let acc=0; for(const v of arr){ acc+=v; if(acc>zt-z0+1e-6) throw new Error('Fixing spacings exceed the facade height ('+(zt-z0)+' mm).'); anchZ.push(snap(z0+acc)); }
+  } else anchZ=pieceZ.slice(1);
+  anchZ=[...new Set(anchZ)].sort((p,q)=>p-q);
+  ex=[...new Set([...ex,...spl,...anchZ].filter(z=>!levels.some(l=>near(l,z))).map(snap))].sort((p,q)=>p-q);
+  const mz=[...levels,...ex].sort((p,q)=>p-q);
+  const ends=$('fixEnds').checked;
+  return {bays,levels,extra:ex,mz,pieceZ,anchZ,baseCols:everyN(nc,g('baseEvery'),1,ends),anchCols:everyN(nc,g('ancEvery'),g('ancStart'),ends)};
+}
+
+// ---------- topology (shared by generator and drawings) ----------
+function buildTopo(xs,levels,mz,pieceZ){
+  const nc=xs.length, nl=levels.length, J=(i,j)=>j*nc+i+1;
+  const lvSet=new Set(levels), pcSet=new Set(pieceZ||levels), jmap=new Map(), joints=[];
+  for(let j=0;j<nl;j++)for(let i=0;i<nc;i++){ joints.push({id:J(i,j),x:xs[i],z:levels[j],i,j}); jmap.set(i+'|'+levels[j],J(i,j)); }
+  let nid=nl*nc;
+  mz.filter(z=>!lvSet.has(z)).forEach(z=>{ for(let i=0;i<nc;i++){ nid++; joints.push({id:nid,x:xs[i],z,i,j:-1}); jmap.set(i+'|'+z,nid); } });
+  const JZ=(i,z)=>jmap.get(i+'|'+z);
+  const frames=[]; let fid=1;
+  for(let i=0;i<nc;i++)for(let k=0;k<mz.length-1;k++) frames.push({id:fid++,a:JZ(i,mz[k]),b:JZ(i,mz[k+1]),type:'mul',i,i2:i,z1:mz[k],z2:mz[k+1],relI:pcSet.has(mz[k]),relJ:pcSet.has(mz[k+1])});
+  for(let j=0;j<nl;j++)for(let i=0;i<nc-1;i++) frames.push({id:fid++,a:J(i,j),b:J(i+1,j),type:'tra',i,i2:i+1,z1:levels[j],z2:levels[j],relI:true,relJ:true});
+  const areas=[]; let aid=1;
+  for(let j=0;j<nl-1;j++)for(let i=0;i<nc-1;i++) areas.push({id:aid++,i,j,j1:J(i,j),j2:J(i+1,j),j3:J(i+1,j+1),j4:J(i,j+1)});
+  return {joints,frames,areas,J,JZ};
+}
+
+// ---------- generator ----------
+function generate(){
+  const name=$('name').value.trim()||'Typ.CW';
+  const x0=g('x0'), ang=g('ang');
+  const GR=getGrid(), bays=GR.bays, levels=GR.levels;
+  if(!bays.length||levels.length<2||bays.some(isNaN)||levels.some(isNaN)) throw new Error('Check bay widths and levels (need at least 1 bay and 2 levels).');
+  for(let i=1;i<levels.length;i++) if(levels[i]<=levels[i-1]) throw new Error('Levels must be ascending.');
+  const xs=[x0]; bays.forEach(w=>xs.push(xs[xs.length-1]+w));
+  const nc=xs.length, nl=levels.length;
+  const J = (i,j)=> j*nc+i+1;
+
+  const T=[]; // tables
+  const table=(title,rows)=>{ if(rows.length) T.push(`TABLE:  "${title}"\n`+rows.map(r=>'   '+r).join('\n')); else T.push(`TABLE:  "${title}"`); };
+
+  // geometry
+  const TP=buildTopo(xs,levels,GR.mz,GR.pieceZ), joints=TP.joints, frames=TP.frames, areas=TP.areas;
+
+  const mulN=$('mul_name').value, traN=$('tra_name').value;
+  const sameSec = mulN===traN;
+
+  // --- tables ---
+  table('ACTIVE DEGREES OF FREEDOM',['UX=Yes   UY=Yes   UZ=Yes   RX=Yes   RY=Yes   RZ=Yes']);
+  table('ANALYSIS OPTIONS',['Solver=Standard   SolverProc=Auto   Force32Bit=No   StiffCase=None   GeomMod=None   HingeOpt="In Elements"   NumAThreads=0   MaxFileSize=0   UseMMFiles="Program Determined"   AllowDiff=No']);
+
+  // wind cases & patterns
+  const on=id=>$(id).checked;
+  const winds=on('pW')?['WIND PRESSURE','WIND SUCTION']:[];
+  const eqOn=on('pEQ');
+  const eqs=eqOn?['EQ']:[];
+  const eqAll=eqOn?['EQ']:[];
+
+  // area loads
+  const al=[]; const deadKN=g('dead'), aBlk=g('aBlk');
+  if(deadKN>0&&on('pDEAD')){
+    if(!(aBlk>0)) throw new Error('Setting-block distance a must be greater than 0.');
+    if(bays.some(w=>aBlk>w/2+1e-9)) throw new Error('Setting-block distance a must not exceed half of the narrowest bay width ('+Math.min(...bays)/2+' mm).');
+  }
+  const p={ 'WIND PRESSURE':-g('w1p')*1e-6,'WIND SUCTION':g('w1n')*1e-6 };
+  areas.forEach(a=>{
+    Object.keys(p).forEach(k=>{ if(p[k]!==0&&winds.includes(k)) al.push(`Area=${a.id}   LoadPat=${q(k)}   CoordSys=Local   Dir=3   UnifLoad=${num(p[k])}   DistType="Two way"`);});
+  });
+  table('AREA LOADS - UNIFORM TO FRAME',al);
+  table('AREA SECTION ASSIGNMENTS',areas.map(a=>`Area=${a.id}   Section=None   MatProp=Default`));
+
+  table('AUTO SEISMIC - USER COEFFICIENT',!eqOn?[]:[
+    `LoadPat=EQ   Dir=Y   PercentEcc=0.05   UserZ=No   C=${g('eqC')}   K=${g('eqK')}`]);
+  table('CASE - MODAL 1 - GENERAL',['Case=MODAL   ModeType=Eigen   MaxNumModes=12   MinNumModes=1   EigenShift=0   EigenCutoff=0   EigenTol=1E-09   AutoShift=Yes']);
+
+  // static cases
+  const patterns=[on('pDEAD')&&'DEAD',on('pL')&&'LIVE',on('pT')&&'T+',on('pT')&&'T-',...winds,...eqs].filter(Boolean);
+  const cs=[];
+  patterns.forEach(pn=>cs.push(`Case=${q(pn)}   LoadType="Load pattern"   LoadName=${q(pn)}   LoadSF=1`));
+  table('CASE - STATIC 1 - LOAD ASSIGNMENTS',cs);
+
+  // combinations (built only from the selected patterns)
+  const combos=[]; // {n,type,items}
+  const have=new Set(patterns);
+  const LBL={'LIVE':'L'};
+  const fmt=(f)=>f===1?'':String(f);
+  const add=(n,items,type='Linear Add',pre='',keep=false)=>{
+    const its=items.filter(it=>have.has(it[0]));
+    const orig=items.filter(it=>it[0]!=='D').length, rem=its.filter(it=>it[0]!=='D').length;
+    if(!its.length||(orig>0&&rem===0)) return;
+    const full=its.length===items.length;
+    const auto=(pre?pre+'-':'')+its.map(it=>fmt(it[1])+(LBL[it[0]]||it[0])).join('+');
+    const nm=typeof n==='function'?n(auto,full):(keep&&full?n:auto);
+    combos.push({n:nm,type,items:its,grp:pre});
+    if(keep) have.add(nm);
+  };
+  add('D',[['DEAD',1]],'Linear Add','',true);
+  add('W',winds.map(w=>[w,1]),'Envelope','',true);
+  add('T',[['T+',1],['T-',1]],'Envelope','',true);
+  add('EQ',[['EQ',1]],'Linear Add','',true);
+  const sg=[1,-1];
+  add((a,full)=>full?'D+L (deflection)':a+' (deflection)',[['D',1],['LIVE',1]]);
+  if($('genLRFD').checked){
+    add(null,[['D',1.4]],'Linear Add','1');
+    add(null,[['D',1.2],['LIVE',1.6]],'Linear Add','2');
+    add(null,[['D',1.2],['LIVE',1.6],['T',1]],'Linear Add','3a');
+    winds.forEach(w=>add(null,[['D',1.2],['LIVE',1.6],[w,0.5]],'Linear Add','3b'));
+    winds.forEach(w=>add(null,[['D',1.2],[w,1],['LIVE',1]],'Linear Add','4'));
+    sg.forEach(s=>add(null,[['D',1.2],['EQ',s],['LIVE',1]],'Linear Add','5'));
+    winds.forEach(w=>add(null,[['D',0.9],[w,1]],'Linear Add','6'));
+    sg.forEach(s=>add(null,[['D',0.9],['EQ',s]],'Linear Add','7'));
+  }
+  if($('genASD').checked){
+    add(null,[['D',1],['T',0.75]]);
+    add(null,[['D',1],['LIVE',1],['T',0.75]]);
+    winds.forEach(w=>add(null,[['D',1],[w,0.6]]));
+    winds.forEach(w=>add(null,[['D',1],[w,0.45],['LIVE',0.75]]));
+    sg.forEach(s=>add(null,[['D',1],['EQ',0.7*s]]));
+    sg.forEach(s=>add(null,[['D',1],['EQ',0.525*s],['LIVE',0.75]]));
+    sg.forEach(s=>add(null,[['D',0.6],['EQ',0.7*s]]));
+    winds.forEach(w=>add(null,[['D',0.6],[w,0.6]]));
+  }
+  winds.forEach((w,k)=>add(a=>`Def.${String(k+1).padStart(2,'0')} (${a})`,[['D',1],[w,0.6]]));
+  const cr=[];
+  combos.forEach(c=>{
+    c.items.forEach((it,k)=>{
+      if(k===0) cr.push(`ComboName=${q(c.n)}   ComboType=${q(c.type)}   AutoDesign=No   CaseName=${q(it[0])}   ScaleFactor=${it[1]}   SteelDesign=None   ConcDesign=None   AlumDesign=None   ColdDesign=None   GUID=${uuid()}`);
+      else cr.push(`ComboName=${q(c.n)}   CaseName=${q(it[0])}   ScaleFactor=${it[1]}`);
+    });
+  });
+  table('COMBINATION DEFINITIONS',cr);
+
+  table('CONNECTIVITY - AREA',areas.map(a=>`Area=${a.id}   Joint1=${a.j1}   Joint2=${a.j2}   Joint3=${a.j3}   Joint4=${a.j4}   GUID=${uuid()}`));
+  table('CONNECTIVITY - FRAME',frames.map(f=>`Frame=${f.id}   JointI=${f.a}   JointJ=${f.b}   IsCurved=No   GUID=${uuid()}`));
+  table('COORDINATE SYSTEMS',['Name=GLOBAL   Type=Cartesian   X=0   Y=0   Z=0   AboutZ=0   AboutY=0   AboutX=0']);
+  table('DATABASE DOCUMENTATION',[]);
+  table('DATABASE FORMAT TYPES',['UnitsCurr=Yes   OverrideE=No']);
+  table('FRAME AUTO MESH ASSIGNMENTS',frames.map(f=>`Frame=${f.id}   AutoMesh=Yes   AtJoints=Yes   AtFrames=No   NumSegments=0   MaxLength=0   MaxDegrees=0`));
+  table('FRAME DESIGN PROCEDURES',frames.map(f=>`Frame=${f.id}   DesignProc="No Design"`));
+  table('FRAME LOADS - TEMPERATURE',!on('pT')?[]:frames.flatMap(f=>[
+    `Frame=${f.id}   LoadPat=T+   Type=Temperature   Temp=${g('temp')}   JtPattern=None`,
+    `Frame=${f.id}   LoadPat=T-   Type=Temperature   Temp=${-g('temp')}   JtPattern=None`]));
+  const pl=[];
+  if(deadKN>0&&on('pDEAD')) areas.forEach(a=>{
+    const f=frames.find(f=>f.type==='tra'&&f.a===a.j1&&f.b===a.j2);
+    const B=xs[(a.j2-1)%nc]-xs[(a.j1-1)%nc], H=levels[Math.floor((a.j4-1)/nc)]-levels[Math.floor((a.j1-1)/nc)];
+    const Pk=deadKN*(B/1000)*(H/1000)/2;
+    [aBlk,B-aBlk].forEach(d=>pl.push(`Frame=${f.id}   LoadPat="DEAD"   CoordSys=GLOBAL   Type=Force   DistType=RelDist   RelDist=${num(d/B)}   AbsDist=${num(d)}   Dir=Gravity   Force=${num(Pk)}`));
+  });
+  // LIVE: point load on every mullion at height H above the bottom level, toward -Y (same direction as wind suction)
+  const livP=g('livP'), livH=g('livH');
+  if(on('pL')&&livP>0){
+    const zH=levels[0]+livH;
+    if(!(livH>=0)||zH>levels[nl-1]+1e-9) throw new Error('LIVE load height H must be between 0 and the total facade height ('+(levels[nl-1]-levels[0])+' mm).');
+    const done=new Set();
+    frames.filter(f=>f.type==='mul'&&zH>=f.z1-1e-9&&zH<=f.z2+1e-9).forEach(f=>{
+      if(done.has(f.i)) return; done.add(f.i);
+      const len=f.z2-f.z1, d=Math.min(len,Math.max(0,zH-f.z1));
+      pl.push(`Frame=${f.id}   LoadPat=LIVE   CoordSys=GLOBAL   Type=Force   DistType=RelDist   RelDist=${num(d/len)}   AbsDist=${num(d)}   Dir=Y   Force=${num(-livP)}`);
+    });
+  }
+  table('FRAME LOADS - POINT',pl);
+  table('FRAME LOAD TRANSFER OPTIONS',frames.map(f=>`Frame=${f.id}   Transfer=Yes`));
+  table('FRAME LOCAL AXES ASSIGNMENTS 1 - TYPICAL',frames.map(f=>`Frame=${f.id}   Angle=${ang}`));
+  table('FRAME OUTPUT STATION ASSIGNMENTS',frames.map(f=>`Frame=${f.id}   StationType=MinNumSta   MinNumSta=20   AddAtElmInt=Yes   AddAtPtLoad=Yes`));
+
+  const relRow=(f)=>{
+    const mode = f.type==='mul' ? $('mulRel').value : $('traRel').value;
+    const ax = f.type==='mul' ? $('mulAx').checked : $('traAx').checked;
+    const mi = mode==='both'&&f.relI, mj = (mode==='both'||mode==='jmoment')&&f.relJ;
+    return `Frame=${f.id}   PI=${yn(ax&&f.relI)}   V2I=No   V3I=No   TI=No   M2I=${yn(mi)}   M3I=${yn(mi)}   PJ=No   V2J=No   V3J=No   TJ=No   M2J=${yn(mj)}   M3J=${yn(mj)}`;
+  };
+  table('FRAME RELEASE ASSIGNMENTS 1 - GENERAL',frames.map(relRow));
+  table('FRAME SECTION ASSIGNMENTS',frames.map(f=>`Frame=${f.id}   AutoSelect=N.A.   AnalSect=${q(f.type==='mul'?mulN:traN)}   MatProp=Default`));
+
+  const secRow=(pre,col)=>{
+    const v=k=>$(pre+'_'+k).value;
+    return `SectionName=${q(v('name'))}   Material=6063T6   Shape=General   t3=${v('depth')}   t2=${v('width')}   Area=${v('area')}   TorsConst=${v('J')}   I33=${v('I33')}   I22=${v('I22')}   I23=0   AS2=${v('AS2')}   AS3=${v('AS3')} _\n        S33=${v('S33')}   S22=${v('S22')}   Z33=${v('Z33')}   Z22=${v('Z22')}   R33=${v('R33')}   R22=${v('R22')}   Color=${col}   FromFile=No   AMod=1   A2Mod=1   A3Mod=1   JMod=1   I2Mod=1   I3Mod=1   MMod=1   WMod=1`;
+  };
+  const secRows=[secRow('mul','Blue')]; if(!sameSec) secRows.push(secRow('tra','Green'));
+  table('FRAME SECTION PROPERTIES 01 - GENERAL',secRows);
+  table('FRAME SECTION PROPERTIES 13 - TIME DEPENDENT',[`SectionName=${q(mulN)}   TypeSize=Auto   AutoSFSize=1`].concat(sameSec?[]:[`SectionName=${q(traN)}   TypeSize=Auto   AutoSFSize=1`]));
+
+  table('GRID LINES',[
+    ...xs.map((x,k)=>`CoordSys=GLOBAL   AxisDir=X   XRYZCoord=${x}   LineType=Primary   LineColor=Gray8Dark   Visible=Yes   BubbleLoc=End`+(k===0?'   AllVisible=Yes   BubbleSize=2438.4':'')),
+    `CoordSys=GLOBAL   AxisDir=Y   XRYZCoord=0   LineType=Primary   LineColor=Gray8Dark   Visible=Yes   BubbleLoc=Start`,
+    ...levels.map(z=>`CoordSys=GLOBAL   AxisDir=Z   XRYZCoord=${z}   LineType=Primary   LineColor=Gray8Dark   Visible=Yes   BubbleLoc=End`)]);
+  table('GROUPS 1 - DEFINITIONS',['GroupName=All   Selection=Yes   SectionCut=Yes   Steel=Yes   Concrete=Yes   Aluminum=Yes   ColdFormed=Yes   Stage=Yes   Bridge=Yes   AutoSeismic=No   AutoWind=No   SelDesSteel=No   SelDesAlum=No   SelDesCold=No   MassWeight=Yes   Color=Red']);
+  table('GROUPS 2 - ASSIGNMENTS',[]);
+  table('JOINT COORDINATES',joints.map(j=>`Joint=${j.id}   CoordSys=GLOBAL   CoordType=Cartesian   XorR=${j.x}   Y=0   Z=${j.z}   SpecialJt=No   GUID=${uuid()}`));
+  table('JOINT PATTERN DEFINITIONS',['Pattern=Default']);
+
+  // restraints
+  const rrows=[], zBase=levels[0];
+  joints.forEach(j=>{
+    let pre=null;
+    if(Math.abs(j.z-zBase)<1e-6){ if(GR.baseCols.has(j.i)) pre='b'; } else if(GR.anchZ.includes(j.z)&&GR.anchCols.has(j.i)) pre='a';
+    if(!pre) return;
+    const r=dofs.map(d=>`${d.replace('U','U').replace('R','R')}=${yn($(pre+'_'+d).checked)}`);
+    if(r.some(s=>s.endsWith('Yes'))) rrows.push(`Joint=${j.id}   ${r.join('   ')}`);
+  });
+  table('JOINT RESTRAINT ASSIGNMENTS',rrows);
+
+  const lcd=(c,type,dt,da,act)=>`Case=${q(c)}   Type=${type}   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=${q(dt)}   DesActOpt="Prog Det"   DesignAct=${q(da)}   AutoType=None   RunCase=${act}   GUID=${uuid()}`;
+  const typeOf = n => n==='DEAD'?['Dead','Non-Composite']: n==='LIVE'?['Live','Short-Term Composite']:
+    n.startsWith('T')?['Temperature','Short-Term Composite']: n.startsWith('W')?['Wind','Short-Term Composite']:['Quake','Short-Term Composite'];
+  const lcRows=[lcd('MODAL','LinModal','Other','Other','No')];
+  patterns.forEach(n=>{const t=typeOf(n); lcRows.push(lcd(n,'LinStatic',t[0],t[1],'Yes'));});
+  table('LOAD CASE DEFINITIONS',lcRows);
+
+  const lpRows=[];
+  patterns.forEach(n=>{
+    const t=typeOf(n)[0];
+    const sw = n==='DEAD'?1:0;
+    let extra='';
+    if(t==='Wind') extra='   AutoLoad=None';
+    if(t==='Quake') extra='   AutoLoad="USER COEFF"';
+    lpRows.push(`LoadPat=${q(n)}   DesignType=${q(t)}   SelfWtMult=${sw}${extra}   GUID=${uuid()}`);
+  });
+  table('LOAD PATTERN DEFINITIONS',lpRows);
+  const msP=['DEAD'].filter(n=>patterns.includes(n));
+  table('MASS SOURCE',msP.length?msP.map((n,k)=>k===0?`MassSource=C45   Elements=No   Masses=No   Loads=Yes   IsDefault=Yes   LoadPat=${q(n)}   Multiplier=1`:`MassSource=C45   LoadPat=${q(n)}   Multiplier=1`):['MassSource=C45   Elements=Yes   Masses=No   Loads=No   IsDefault=Yes']);
+
+  table('MATERIAL PROPERTIES 01 - GENERAL',['Material=6063T6   Type=Aluminum   Grade="Alloy 6063 T6"   SymType=Isotropic   TempDepend=No   Color=Red   GUID='+uuid()+'   Notes="United States ASTM Alloy 6063 T6"']);
+  table('MATERIAL PROPERTIES 02 - BASIC MECHANICAL PROPERTIES',['Material=6063T6   UnitWeight=2.66018217784467E-08   UnitMass=2.71447161004558E-12   E1=69.6370546841094   G12=26.1793438662065   U12=0.33   A1=2.3579998875618E-05']);
+  table('MATERIAL PROPERTIES 03C - ALUMINUM DATA',['Material=6063T6   AlumType=Wrought   Alloy=6063-T6   Fcy=0.172368947237894   Fty=0.172368947237894   Ftu=0.206842736685473   Fsu=0.1310003999008   SSHysType=Kinematic   CoupModType="Von Mises"']);
+  table('MATERIAL PROPERTIES 03J - COUPLED NONLINEAR VON MISES DATA',['Material=6063T6   YieldStress=0.172368947237894   LinIsoHard=No   LinKinHard=No   NLIsoSaHard=No']);
+  table('MATERIAL PROPERTIES 04 - USER STRESS-STRAIN CURVES',[
+    'Material=6063T6   Strain=-0.124752475247525   Stress=0',
+    'Material=6063T6   Strain=-0.1   Stress=-0.172368947237894   PointID=-E',
+    'Material=6063T6   Strain=-0.08   Stress=-0.206842736685473   PointID=-D',
+    'Material=6063T6   Strain=-0.05   Stress=-0.206842736685473   PointID=-C',
+    'Material=6063T6   Strain=-0.02   Stress=-0.172368947237894',
+    'Material=6063T6   Strain=-0.00247524752475248   Stress=-0.172368947237894   PointID=-B',
+    'Material=6063T6   Strain=0   Stress=0   PointID=A',
+    'Material=6063T6   Strain=0.00247524752475248   Stress=0.172368947237894   PointID=B',
+    'Material=6063T6   Strain=0.02   Stress=0.172368947237894',
+    'Material=6063T6   Strain=0.05   Stress=0.206842736685473   PointID=C',
+    'Material=6063T6   Strain=0.08   Stress=0.206842736685473   PointID=D',
+    'Material=6063T6   Strain=0.1   Stress=0.172368947237894   PointID=E',
+    'Material=6063T6   Strain=0.124752475247525   Stress=0']);
+  table('MATERIAL PROPERTIES 06 - DAMPING PARAMETERS',['Material=6063T6   ModalRatio=0   VisMass=0   VisStiff=0   HysMass=0   HysStiff=0']);
+  table('PREFERENCES - DIMENSIONAL',['MergeTol=1   FineGrid=250   Nudge=250   SelectTol=3   SnapTol=12   SLineThick=2   PLineThick=6   MaxFont=6   MinFont=7   AutoZoom=10   ShrinkFact=70   TextFileLen=240']);
+  table('PROGRAM CONTROL',[`ProgramName=SAP2000   Version=${($('sapVer').value||'26.3.0').trim()}   CurrUnits="KN, mm, C"   SteelCode="AISC 360-16"   ConcCode="ACI 318-14"   AlumCode="AA-ASD 2000"   ColdCode=AISI-ASD96   RegenHinge=Yes`]);
+
+  const head=`File ${name}.$2k was saved on m/d/yy at h:mm:ss\n \n`;
+  const text = head + T.join('\n \n') + '\n \nEND TABLE DATA\n';
+  return {text,name,combos,patterns,stats:{joints:joints.length,frames:frames.length,areas:areas.length,combos:combos.length,patterns:patterns.length,restraints:rrows.length}};
+}
+
+let last=null;
+function run(){
+  try{
+    last=generate();
+    $('out').value=last.text;
+    const s=last.stats;
+    $('stats').textContent=`${s.joints} joints · ${s.frames} frames · ${s.areas} areas · ${s.patterns} load patterns · ${s.combos} combinations · ${s.restraints} restrained joints · ${(last.text.length/1024).toFixed(0)} KB`;
+  }catch(e){ $('stats').textContent='Error: '+e.message; }
+}
+$('gen').onclick=run;
+$('dl').onclick=()=>{
+  if(!last) run(); if(!last) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([last.text],{type:'text/plain'}));
+  a.download=last.name+'.$2k'; document.body.appendChild(a); a.click(); a.remove();
+};
+$('cp').onclick=async()=>{ if(!last) run(); try{await navigator.clipboard.writeText($('out').value);$('stats').textContent+=' · copied';}catch(e){$('out').select();document.execCommand('copy');} };
+
+// ================= DRAWINGS =================
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const f2=n=>String(+(+n).toFixed(2));
+const dofStr=o=>dofs.filter(d=>o[d]).join(' ')||'none';
+const CV={wind:'--c-wind',dead:'--c-dead',dim:'--acc',ink:'--ink'};
+const mkDefs=p=>`<defs>${Object.keys(CV).map(k=>`<marker id="${p}-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" style="fill:var(${CV[k]})"/></marker>`).join('')}</defs>`;
+const arrow=(p,k,x1,y1,x2,y2,w=1.6)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:var(${CV[k]});stroke-width:${w}" marker-end="url(#${p}-${k})"/>`;
+const symX=(x,y,r=6)=>`<g class="wsym"><circle cx="${x}" cy="${y}" r="${r}"/><path d="M${x-r*.7} ${y-r*.7}L${x+r*.7} ${y+r*.7}M${x-r*.7} ${y+r*.7}L${x+r*.7} ${y-r*.7}"/></g>`;
+const symDot=(x,y,r=6)=>`<g class="wsym"><circle cx="${x}" cy="${y}" r="${r}"/><circle cx="${x}" cy="${y}" r="1.8" style="fill:var(--c-wind);stroke:none"/></g>`;
+function dimH(x1,x2,y,label,ye,fs=10){
+  return `<g class="dim"><line x1="${x1}" y1="${ye}" x2="${x1}" y2="${y+5}"/><line x1="${x2}" y1="${ye}" x2="${x2}" y2="${y+5}"/><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><path d="M${x1-3} ${y+3}L${x1+3} ${y-3}M${x2-3} ${y+3}L${x2+3} ${y-3}"/><text x="${(x1+x2)/2}" y="${y-4}" text-anchor="middle" style="font-size:${fs}px">${label}</text></g>`;
+}
+function dimV(y1,y2,x,label,xe){
+  return `<g class="dim"><line x1="${xe}" y1="${y1}" x2="${x-5}" y2="${y1}"/><line x1="${xe}" y1="${y2}" x2="${x-5}" y2="${y2}"/><line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/><path d="M${x-3} ${y1+3}L${x+3} ${y1-3}M${x-3} ${y2+3}L${x+3} ${y2-3}"/><text transform="translate(${x-5} ${(y1+y2)/2}) rotate(-90)" text-anchor="middle">${label}</text></g>`;
+}
+
+function readModel(){
+  const GR=getGrid(), bays=GR.bays, levels=GR.levels, x0=g('x0');
+  if(!bays.length||levels.length<2||bays.some(v=>!(v>0))||levels.some(isNaN)||isNaN(x0)) throw new Error('Check bay widths (positive) and levels (at least 2).');
+  for(let i=1;i<levels.length;i++) if(levels[i]<=levels[i-1]) throw new Error('Levels must be ascending.');
+  const xs=[x0]; bays.forEach(w=>xs.push(xs[xs.length-1]+w));
+  const nc=xs.length, nl=levels.length;
+  const TP=buildTopo(xs,levels,GR.mz,GR.pieceZ);
+  const sup=pre=>Object.fromEntries(dofs.map(d=>[d,$(pre+'_'+d).checked]));
+  return {bays,levels,xs,nc,nl,J:TP.J,JZ:TP.JZ,joints:TP.joints,frames:TP.frames,areas:TP.areas,mz:GR.mz,pieceZ:GR.pieceZ,extra:GR.extra,anchZ:GR.anchZ,baseCols:GR.baseCols,anchCols:GR.anchCols,base:sup('b'),anc:sup('a'),mulN:$('mul_name').value,traN:$('tra_name').value};
+}
+function layout(m){
+  const VW=880, ML=130, MR=175, MT=60, MB=175;
+  const W=m.xs[m.nc-1]-m.xs[0], H=m.levels[m.nl-1]-m.levels[0];
+  const ex=Math.max(0.2,+$('exag').value||1), availW=VW-ML-MR;
+  const b=Math.min(620/H, availW/(W*ex));
+  const sx=b*ex, sz=b, ox=ML+(availW-sx*W)/2, PH=sz*H;
+  return {VW,ML,MR,MT,MB,W,H,sx,sz,ox,PH,VH:MT+PH+MB,ex};
+}
+const supAt=(m,z)=>Math.abs(z-m.levels[0])<1e-6?m.base:(m.anchZ.includes(z)?m.anc:null);
+const hasSup=r=>r&&dofs.some(d=>r[d]);
+
+function supSyms(m,X,Y){
+  let s='';
+  for(const zz of m.mz){
+    const r=supAt(m,zz); if(!hasSup(r)) continue;
+    for(let i=0;i<m.nc;i++){
+      if(!(Math.abs(zz-m.levels[0])<1e-6?m.baseCols:m.anchCols).has(i)) continue;
+      const x=X(m.xs[i]), y=Y(zz), t=`<title>Joint ${m.JZ(i,zz)}: restrained ${dofStr(r)}</title>`;
+      if(r.U1||r.U3){
+        const roller=r.U3&&!r.U1, rot=(!r.U3&&r.U1)?` transform="rotate(90 ${x} ${y})"`:'';
+        s+=`<g class="sup"${rot}><path d="M${x} ${y}L${x-8} ${y+14}L${x+8} ${y+14}Z"/>`+
+           (roller?`<circle cx="${x-4}" cy="${y+17}" r="2.6"/><circle cx="${x+4}" cy="${y+17}" r="2.6"/><path d="M${x-11} ${y+21}H${x+11}"/>`:`<path d="M${x-11} ${y+17}H${x+11}"/>`)+t+`</g>`;
+      }
+      if(r.U2) s+=`<g class="supy"><circle cx="${x}" cy="${y}" r="7"/><path d="M${x-4.5} ${y-4.5}l9 9m0 -9l-9 9"/>${t}</g>`;
+    }
+  }
+  return s;
+}
+function relMarks(m,X,Y){
+  let s='';
+  m.frames.forEach(f=>{
+    const mode=f.type==='mul'?$('mulRel').value:$('traRel').value, ax=f.type==='mul'?$('mulAx').checked:$('traAx').checked;
+    const mi=mode==='both'&&f.relI, mj=(mode==='both'||mode==='jmoment')&&f.relJ;
+    const x1=X(m.xs[f.i]),y1=Y(f.z1),x2=X(m.xs[f.i2]),y2=Y(f.z2);
+    const len=Math.hypot(x2-x1,y2-y1); if(len<8) return;
+    const ux=(x2-x1)/len, uy=(y2-y1)/len, off=Math.min(10,len*.18);
+    if(mi) s+=`<circle class="rel" cx="${x1+ux*off}" cy="${y1+uy*off}" r="3.6"/>`;
+    if(mj) s+=`<circle class="rel" cx="${x2-ux*off}" cy="${y2-uy*off}" r="3.6"/>`;
+    if(ax&&f.relI){const c=Math.min(22,len*.32), px=x1+ux*c, py=y1+uy*c, nx=-uy*5, ny=ux*5, a=ux*1.8, b=uy*1.8;
+      s+=`<path class="axr" d="M${px-a+nx} ${py-b+ny}L${px-a-nx} ${py-b-ny}M${px+a+nx} ${py+b+ny}L${px+a-nx} ${py+b-ny}"/>`;}
+  });
+  return s;
+}
+
+function elevationSVG(m,mode){
+  const L=layout(m), {VW,MT,sx,sz,ox,VH}=L;
+  const X=x=>ox+(x-m.xs[0])*sx, Y=z=>MT+(m.levels[m.nl-1]-z)*sz;
+  const xl=X(m.xs[0]), xr=X(m.xs[m.nc-1]), yb=Y(m.levels[0]);
+  const P='e'+mode, ld=mode==='load';
+  const showF=$('showF').checked&&!ld, showJ=$('showJ').checked&&!ld, showA=$('showA').checked, showR=$('showR').checked&&!ld, showS=$('showS').checked;
+  const nM=m.frames.filter(f=>f.type==='mul').length, nT=m.frames.length-nM;
+  const dead=g('dead'), aBlk=g('aBlk'), w1p=g('w1p'), w1n=g('w1n');
+  const o=[`<svg class="dr" viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg" role="img">`, mkDefs(P)];
+  o.push(`<text x="14" y="16" style="font-weight:700">${ld?'LOADS':'GEOMETRY &amp; PROFILES'} &middot; ELEVATION &mdash; view along +Y (X &rarr; right, Z &uarr;, +Y points into the page)</text>`);
+  if(L.ex!==1) o.push(`<text class="mut" x="14" y="29">Drawing is stretched ${f2(L.ex)}&times; in X for readability &mdash; dimensions printed are the real values.</text>`);
+
+  // panels
+  m.areas.forEach(a=>{
+    const x1=X(m.xs[a.i]), x2=X(m.xs[a.i+1]), y1=Y(m.levels[a.j+1]), y2=Y(m.levels[a.j]), pw=x2-x1, ph=y2-y1;
+    const Hh=m.levels[a.j+1]-m.levels[a.j];
+    o.push(`<rect class="panel" x="${x1}" y="${y1}" width="${pw}" height="${ph}"><title>Area ${a.id}: ${f2(m.bays[a.i])} x ${f2(Hh)} mm</title></rect>`);
+    if(showA) o.push(`<text class="mut" x="${x1+12}" y="${y1+22}" style="font-size:8.5px">A${a.id}</text>`);
+    if(ld){
+      const fs=Math.max(6,Math.min(10,pw/14)), y0=y1+ph*.56, lh=fs+3.5, cx=(x1+x2)/2;
+      const ay=y1+ph*.2;
+      const Bm=m.bays[a.i], Pk=dead*(Bm/1000)*(Hh/1000)/2;
+      if(dead>0&&$('pDEAD').checked&&aBlk>0&&aBlk<=Bm/2){ [x1+pw*aBlk/Bm, x2-pw*aBlk/Bm].forEach(px=>{ o.push(arrow(P,'dead',px,y2-30,px,y2-2,2)); }); }
+      o.push(symX(x1+pw*.42,ay+8,Math.min(6,pw*.06)),symDot(x1+pw*.7,ay+8,Math.min(6,pw*.06)));
+      o.push(`<text x="${cx}" y="${y0}" text-anchor="middle" style="font-size:${fs}px;fill:var(--c-dead)">Glass 2&times;${Pk.toFixed(3)} kN</text>`);
+      o.push(`<text x="${cx}" y="${y0+lh}" text-anchor="middle" style="font-size:${fs}px">+Y ${f2(w1p)} | &minus;Y ${f2(w1n)}</text>`);
+      o.push(`<text class="mut" x="${cx}" y="${y0+2*lh}" text-anchor="middle" style="font-size:${fs-1}px">wind in kPa</text>`);
+    }
+  });
+  // level lines + labels
+  for(let j=0;j<m.nl;j++){
+    const y=Y(m.levels[j]), r=supAt(m,m.levels[j]);
+    const sup=hasSup(r)?`${j===0?'Base':'Anchor'}: ${dofStr(r)}`:'no support';
+    o.push(`<line class="grid" x1="${xl-18}" y1="${y}" x2="${xr+22}" y2="${y}"/>`);
+    o.push(`<text x="${xr+28}" y="${y+3}" style="font-weight:700">L${j}&nbsp; Z = ${f2(m.levels[j])}</text><text class="mut" x="${xr+28}" y="${y+16}">${sup}</text>`);
+  }
+  m.extra.forEach((z,k)=>{ const y=Y(z), r=supAt(m,z), spl=m.pieceZ.includes(z), sup=(spl?'piece end / release':'mullion node')+(hasSup(r)?` &middot; Anchor: ${dofStr(r)}`:'');
+    o.push(`<line class="grid" style="stroke-dasharray:2 4" x1="${xl-18}" y1="${y}" x2="${xr+22}" y2="${y}"/>`);
+    o.push(`<text x="${xr+28}" y="${y+3}" style="font-weight:700;fill:var(--c-mul)">N${k+1}&nbsp; Z = ${f2(z)}</text><text class="mut" x="${xr+28}" y="${y+16}">${sup}</text>`); });
+  // frames
+  m.frames.forEach(f=>{
+    const x1=X(m.xs[f.i]),y1=Y(f.z1),x2=X(m.xs[f.i2]),y2=Y(f.z2);
+    const sec=f.type==='mul'?m.mulN:m.traN;
+    o.push(`<line class="${f.type}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><title>Frame ${f.id} (${f.type==='mul'?'mullion':'transom'}) &ndash; ${esc(sec)} &middot; joints ${f.a} &rarr; ${f.b}</title></line>`);
+    if(showF){
+      if(f.type==='mul') o.push(`<text style="font-size:9px;fill:var(--c-mul)" x="${x1+8}" y="${(y1+y2)/2+3}">${f.id}</text>`);
+      else o.push(`<text style="font-size:9px;fill:var(--c-tra)" x="${(x1+x2)/2}" y="${y1-7}" text-anchor="middle">${f.id}</text>`);
+    }
+  });
+  if(showR) o.push(relMarks(m,X,Y));
+  m.joints.forEach(jt=>{
+    const x=X(jt.x),y=Y(jt.z);
+    o.push(`<circle class="jt" cx="${x}" cy="${y}" r="2.6"/>`);
+    if(showJ) o.push(`<text class="mut" style="font-size:8px" x="${x+4}" y="${y-4}">${jt.id}</text>`);
+  });
+  if(showS) o.push(supSyms(m,X,Y));
+
+  // dimensions: bays
+  const ydb=yb+46;
+  m.bays.forEach((w,i)=>o.push(dimH(X(m.xs[i]),X(m.xs[i+1]),ydb,f2(w),yb+24,(X(m.xs[i+1])-X(m.xs[i]))<30?8:10)));
+  o.push(dimH(xl,xr,ydb+26,`Total width ${f2(m.xs[m.nc-1]-m.xs[0])} mm`,yb+24));
+  // dimensions: storeys
+  const xd=xl-48;
+  for(let j=0;j<m.nl-1;j++) o.push(dimV(Y(m.levels[j+1]),Y(m.levels[j]),xd,f2(m.levels[j+1]-m.levels[j]),xl-10));
+  o.push(dimV(Y(m.levels[m.nl-1]),Y(m.levels[0]),xd-32,`Total height ${f2(m.levels[m.nl-1]-m.levels[0])} mm`,xl-10));
+  // column labels
+  for(let i=0;i<m.nc;i++) o.push(`<text class="mut" style="font-size:8.5px" x="${X(m.xs[i])}" y="${MT-10}" text-anchor="middle">${ld?'':'C'+(i+1)}</text>`);
+
+  // load-mode notes
+  if(ld){
+    o.push(`<text x="14" y="${L.MT-30}" style="fill:var(--c-dead)">Temperature: &plusmn;${f2(g('temp'))} &deg;C uniform on all frames (T+ / T&minus;)</text>`);
+    o.push(`<text x="14" y="${L.MT-17}">Seismic (user coefficient): C = ${f2(g('eqC'))}, K = ${f2(g('eqK'))} &middot; EQ acts in Y (out of plane), &plusmn; by combination factor</text>`);
+    o.push(arrow(P,'ink',xl,MT-6,xl+46,MT-6)); o.push(`<text style="font-size:9px" x="${xl+52}" y="${MT-3}">EQ</text>`);
+  }
+
+  // legend
+  let ly=yb+100; const lx=18; const row=(n)=>ly+n*17;
+  if(!ld){
+    const secInfo=(cls,name,ids,kind)=>`<line class="${cls}" x1="${lx}" y1="#Y#" x2="${lx+30}" y2="#Y#"/><text x="${lx+40}" y="#T#">${esc(name)} &rarr; Frames ${ids} (${kind})</text>`;
+    const mids=nM?`1&ndash;${nM}`:'&mdash;', tids=nT?`${nM+1}&ndash;${m.frames.length}`:'&mdash;';
+    o.push(secInfo('mul',m.mulN,mids,'vertical mullions, '+(m.nc)+' lines').replace(/#Y#/g,row(0)).replace(/#T#/g,row(0)+3));
+    o.push(secInfo('tra',m.traN,tids,'horizontal transoms, '+m.nl+' levels').replace(/#Y#/g,row(1)).replace(/#T#/g,row(1)+3));
+    o.push(`<circle class="rel" cx="${lx+6}" cy="${row(2)}" r="3.6"/><text x="${lx+18}" y="${row(2)+3}">moment release (M2, M3)</text>`);
+    o.push(`<path class="axr" d="M${lx+244} ${row(2)-5}v10M${lx+248} ${row(2)-5}v10"/><text x="${lx+258}" y="${row(2)+3}">axial release at I end (bottom / left)</text>`);
+    o.push(`<g class="sup"><path d="M${lx+520} ${row(2)-6}l-6 11h12z"/></g><text x="${lx+532}" y="${row(2)+3}">in-plane support (U1/U3)</text>`);
+    o.push(`<g class="supy"><circle cx="${lx+6}" cy="${row(3)}" r="6"/><path d="M${lx+2.5} ${row(3)-3.5}l7 7m0 -7l-7 7"/></g><text x="${lx+18}" y="${row(3)+3}">out-of-plane (Y) restraint U2</text>`);
+    o.push(`<circle class="jt" cx="${lx+244}" cy="${row(3)}" r="2.6"/><text x="${lx+258}" y="${row(3)+3}">joint</text>`);
+    o.push(`<text style="fill:var(--acc);font-weight:600" x="${lx+520}" y="${row(3)+3}">blue = dimensions you entered (mm)</text>`);
+  } else {
+    o.push(arrow(P,'dead',lx+4,row(0)-7,lx+4,row(0)+5)); o.push(`<text x="${lx+14}" y="${row(0)+3}">DEAD: glass weight (kN/m&sup2; &times; panel area) as 2 equal point loads on the bottom transom, a mm from each panel edge</text>`);
+    o.push(symX(lx+4,row(1),6)); o.push(`<text x="${lx+18}" y="${row(1)+3}">WIND PRESSURE (Y+): toward +Y, into the page</text>`);
+    o.push(symDot(lx+4,row(2),6)); o.push(`<text x="${lx+18}" y="${row(2)+3}">WIND SUCTION (Y&minus;): toward &minus;Y, out of the page</text>`);
+    o.push(`<text class="mut" x="${lx}" y="${row(3)+3}">Panel text = glass point load P (kN) and wind values entered (kPa). Wind is applied two-way: panel load is shared to the mullions and transoms around it.</text>`);
+  }
+  o.push('</svg>');
+  return o.join('');
+}
+
+function sideSVG(m){
+  const L=layout(m), {MT,sz,PH}=L, VW=700, fx=250, P='sd', VH=MT+PH+80;
+  const Y=z=>MT+(m.levels[m.nl-1]-z)*sz;
+  const pp=g('w1p'), pn=g('w1n'), pmax=Math.max(pp,pn,1e-9);
+  const tInt=m.nc>2?(m.bays[0]+m.bays[1])/2:m.bays[0], tEdge=m.bays[0]/2;
+  const o=[`<svg class="dr" viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg" role="img">`, mkDefs(P)];
+  o.push(`<text x="14" y="16" style="font-weight:700">SIDE SECTION &mdash; wind on one mullion line (view along &minus;X: Y &rarr; right, Z &uarr;)</text>`);
+  o.push(`<text x="${fx-10}" y="32" text-anchor="end" style="fill:var(--c-wind);font-weight:700">WIND PRESSURE = ${f2(pp)} kPa</text>`);
+  o.push(`<text x="${fx-10}" y="44" text-anchor="end">${f2(pp*tInt/1000)} kN/m on interior mullion</text>`);
+  o.push(`<text x="${fx-10}" y="56" text-anchor="end">${f2(pp*tEdge/1000)} kN/m on edge mullion</text>`);
+  o.push(`<text x="${fx+10}" y="32" style="fill:var(--c-wind);font-weight:700">WIND SUCTION = ${f2(pn)} kPa</text>`);
+  o.push(`<text x="${fx+10}" y="44">${f2(pn*tInt/1000)} kN/m on interior mullion</text>`);
+  o.push(`<text x="${fx+10}" y="56">${f2(pn*tEdge/1000)} kN/m on edge mullion</text>`);
+  // levels
+  for(let j=0;j<m.nl;j++){
+    const y=Y(m.levels[j]);
+    o.push(`<line class="grid" x1="40" y1="${y}" x2="604" y2="${y}"/><text x="12" y="${y+3}" style="font-weight:700">L${j}</text><text class="mut" x="12" y="${y+14}" style="font-size:8.5px">Z=${f2(m.levels[j])}</text>`);
+  }
+  { const lp=g('livP'), lh=g('livH'); if($('pL').checked&&lp>0){ const yH=Y(m.levels[0]+lh); o.push(arrow(P,'dead',fx+60,yH,fx+10,yH,2)); o.push(`<text x="${fx+64}" y="${yH+3}" style="fill:var(--c-dead);font-weight:700">LIVE ${f2(lp)} kN @ H=${f2(lh)}</text>`); } }
+  // wind arrows
+  const n=Math.max(4,Math.round(PH/55));
+  const lenP=30+90*pp/pmax, lenN=30+90*pn/pmax;
+  const ys=[]; for(let k=1;k<=n;k++) ys.push(MT+PH*k/(n+1));
+  ys.forEach(y=>{
+    o.push(arrow(P,'wind',fx-8-lenP,y,fx-8,y)); o.push(arrow(P,'wind',fx+8+lenN,y,fx+8,y));
+  });
+  o.push(`<line style="stroke:var(--c-wind);stroke-width:1" x1="${fx-8-lenP}" y1="${ys[0]}" x2="${fx-8-lenP}" y2="${ys[n-1]}"/><line style="stroke:var(--c-wind);stroke-width:1" x1="${fx+8+lenN}" y1="${ys[0]}" x2="${fx+8+lenN}" y2="${ys[n-1]}"/>`);
+  // facade (mullion)
+  o.push(`<line class="mul" style="stroke-width:7" x1="${fx}" y1="${Y(m.levels[0])}" x2="${fx}" y2="${Y(m.levels[m.nl-1])}"><title>${esc(m.mulN)}</title></line>`);
+  o.push(`<text class="mut" x="${fx}" y="${Y(m.levels[0])+42}" text-anchor="middle">${esc(m.mulN)}</text>`);
+  // supports
+  const lat=[];
+  for(const zz of m.mz){
+    const r=supAt(m,zz); if(!hasSup(r)) continue;
+    const y=Y(zz), isB=Math.abs(zz-m.levels[0])<1e-6, lj=m.levels.findIndex(l=>l===zz);
+    if(r.U2){ lat.push(zz); o.push(`<g class="supy"><circle cx="${fx}" cy="${y}" r="7"/><path d="M${fx-4} ${y}h8M${fx-4} ${y}l2 -2M${fx-4} ${y}l2 2M${fx+4} ${y}l-2 -2M${fx+4} ${y}l-2 2"/></g>`); }
+    if(r.U3) o.push(`<g class="sup"><path d="M${fx} ${y+7}L${fx-8} ${y+21}L${fx+8} ${y+21}Z"/><path d="M${fx-11} ${y+24}H${fx+11}"/></g>`);
+    o.push(`<line style="stroke:var(--c-sup);stroke-dasharray:2 3;stroke-width:1" x1="${fx+10}" y1="${y}" x2="430" y2="${y}"/><text x="434" y="${y+3}" style="fill:var(--c-sup);font-weight:700">${lj>=0?'L'+lj:'Z='+f2(zz)} ${isB?'base':'anchor'}: ${dofStr(r)}</text>`);
+  }
+  // spans
+  const zb=m.levels[0], zt2=m.levels[m.nl-1];
+  const pts=[zb,...lat.filter(z=>z>zb&&z<zt2),zt2].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a-b);
+  for(let k=0;k<pts.length-1;k++){
+    const a=pts[k], b=pts[k+1], free=(!lat.includes(a)||!lat.includes(b));
+    o.push(dimV(Y(b),Y(a),640,f2(b-a)+(free?' (free end)':''),604));
+  }
+  if(lat.length<2) o.push(`<text class="bad" x="14" y="${VH-14}">&#9888; fewer than two Y (U2) supports: the mullion is a mechanism under wind &mdash; add anchor levels / U2 restraint.</text>`);
+  else o.push(`<text class="mut" x="14" y="${VH-14}">Each mullion spans between the Y-supports (green) and carries the wind from its tributary width (average of the adjacent bays).</text>`);
+  o.push('</svg>');
+  return o.join('');
+}
+
+function loadTable(m){
+  const dead=g('dead'), aBlk=g('aBlk'), pr=[g('w1p'),g('w1n')];
+  const rows=[
+        ['WIND PRESSURE (Y+)','local 3','Two way',pr[0],-pr[0]*1e-6],['WIND SUCTION (Y&minus;)','local 3','Two way',pr[1],pr[1]*1e-6]];
+  let h=`<table class="tbl"><tr><th>Load pattern (area loads)</th><th>Direction</th><th>Distribution</th><th>Entered (kPa)</th><th>Written to file (kN/mm&sup2;)</th></tr>`+
+    rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${f2(r[3])}</td><td>${num(r[4])}</td></tr>`).join('')+`</table>`;
+  h+=`<table class="tbl"><tr><th>Panel</th><th>W &times; H (mm)</th><th>Area (m&sup2;)</th><th>Glass weight (kN)</th><th>P each block (kN)</th><th>a / W&minus;a (mm)</th><th>Pressure Y+ (kN)</th><th>Suction Y&minus; (kN)</th></tr>`+
+    m.areas.map(a=>{const B=m.bays[a.i],Hh=m.levels[a.j+1]-m.levels[a.j],A=B*Hh/1e6;
+      return `<tr><td>A${a.id}</td><td>${f2(B)} &times; ${f2(Hh)}</td><td>${f2(A)}</td><td>${f2(dead*A)}</td><td>${(dead*A/2).toFixed(3)}</td><td>${f2(aBlk)} / ${f2(B-aBlk)}</td><td>${f2(pr[0]*A)}</td><td>${f2(pr[1]*A)}</td></tr>`;}).join('')+`</table>`;
+  h+=`<div class="note">Glass: dead load (kN/m&sup2;) &times; panel area = panel weight, applied in DEAD as two equal point loads P = weight / 2 on the bottom transom at a and W&minus;a from the left end of the panel. Wind forces below: pressure &times; panel area (resultant on the whole panel). The file stores the pressure itself, and SAP2000 distributes it to the surrounding frames. Temperature &plusmn;${f2(g('temp'))} &deg;C is assigned to every frame; seismic uses C = ${f2(g('eqC'))}, K = ${f2(g('eqK'))}.</div>`;
+  return h;
+}
+
+function sectionCard(pre,m,sc,ids){
+  const v=k=>+$(pre+'_'+k).value, D=v('depth'), B=v('width'), A=v('area'), name=$(pre+'_name').value, cls=pre==='mul'?'secm':'sect', P='s'+pre;
+  const VW=340, VH=410;
+  if(!(D>0&&B>0)) return `<svg class="dr" viewBox="0 0 ${VW} 80"><text x="14" y="30">${esc(name)}: enter depth and width</text></svg>`;
+  const w=B*sc, h=D*sc, cx=190, x0=cx-w/2, y0=84;
+  const disc=(D+B)**2-4*A; let t=disc>=0?((D+B)-Math.sqrt(disc))/4:Math.min(D,B)/2;
+  t=Math.min(Math.max(t,0),Math.min(D,B)/2); const ts=t*sc;
+  const hollow=t<Math.min(D,B)/2-1e-6;
+  let d=`M${x0} ${y0}h${w}v${h}h${-w}z`;
+  if(hollow&&w-2*ts>0&&h-2*ts>0) d+=`M${x0+ts} ${y0+ts}h${w-2*ts}v${h-2*ts}h${-(w-2*ts)}z`;
+  const ang=g('ang'), aligned=((ang%180)+180)%180===90;
+  const o=[`<svg class="dr" viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg" role="img">`,mkDefs(P)];
+  o.push(`<text x="14" y="18" style="font-weight:700;font-size:12px;fill:var(${pre==='mul'?'--c-mul':'--c-tra'})">${esc(name)}</text>`);
+  o.push(`<text x="14" y="32" class="mut">${pre==='mul'?'Mullion':'Transom'} &middot; Frames ${ids}</text>`);
+  if(!aligned) o.push(`<text class="bad" x="14" y="46">&#9888; local axis angle ${f2(ang)}&deg;: strong axis may not face the Y wind</text>`);
+  o.push(`<path class="sec ${cls}" d="${d}"/>`);
+  o.push(dimH(x0,x0+w,y0-16,`B = ${f2(B)} mm`,y0));
+  o.push(dimV(y0,y0+h,x0+w+30,`D = ${f2(D)} mm`,x0+w+4));
+  // global axes triad
+  const ox=34, oy=y0+h*.55;
+  o.push(arrow(P,'ink',ox,oy,ox+34,oy)); o.push(arrow(P,'ink',ox,oy,ox,oy-34));
+  o.push(`<text x="${ox+38}" y="${oy+3}">X</text><text x="${ox-3}" y="${oy-38}">Y</text><text class="mut" x="${ox-18}" y="${oy+16}" style="font-size:8.5px">plan view</text>`);
+  // wind arrows under the section
+  const yw=y0+h+14;
+  [0.2,0.5,0.8].forEach(f=>o.push(arrow(P,'wind',x0+w*f,yw+34,x0+w*f,yw+4)));
+  o.push(`<text x="${cx}" y="${yw+48}" text-anchor="middle" style="fill:var(--c-wind);font-weight:700">W(Y+) wind &uarr;</text>`);
+  o.push(`<text x="14" y="${VH-46}">I33 = ${esc($(pre+'_I33').value)} mm&#8308; (strong, faces wind) &middot; I22 = ${esc($(pre+'_I22').value)}</text>`);
+  o.push(`<text x="14" y="${VH-32}">A = ${f2(A)} mm&sup2; &middot; J = ${esc($(pre+'_J').value)} mm&#8308;</text>`);
+  o.push(`<text class="mut" x="14" y="${VH-18}" style="font-size:9px">${hollow?`Schematic hollow box, equivalent wall t &asymp; ${f2(t)} mm (from A).`:'Solid bounding box (area is at least B&times;D).'}</text><text class="mut" x="14" y="${VH-7}" style="font-size:9px">Not the real extrusion die shape.</text>`);
+  o.push('</svg>');
+  return o.join('');
+}
+function sectionsHTML(m){
+  const nM=m.frames.filter(f=>f.type==='mul').length, n=m.frames.length;
+  const D=['mul','tra'].map(p=>+$(p+'_depth').value).filter(x=>x>0), B=['mul','tra'].map(p=>+$(p+'_width').value).filter(x=>x>0);
+  const sc=Math.min(190/Math.max(...D,1), 150/Math.max(...B,1));
+  const same=m.mulN===m.traN;
+  return `<div class="secgrid">${sectionCard('mul',m,sc,nM?`1&ndash;${nM}`:'&mdash;')}${sectionCard('tra',m,sc,n>nM?`${nM+1}&ndash;${n}`:'&mdash;')}</div>`+
+    `<div class="note">Both sections are drawn to the same scale. Depth D is oriented perpendicular to the facade (global Y) so the strong axis (I33) resists wind &mdash; this works with the local axis angle &minus;90&deg; used in your original file.${same?' <b>Both sections share the same name, so only one section is written to the file.</b>':''}</div>`;
+}
+
+function comboHTML(){
+  if(!last||!last.combos) return '<p class="warn">Nothing generated.</p>';
+  const c=last.combos;
+  const rows=c.map((x,k)=>{
+    const env=x.type==='Envelope';
+    const def=x.items.map(([n,f])=>(env||f===1?'':f+' &times; ')+esc(n)).join(env?' , ':' + ');
+    return `<tr><td>${k+1}</td><td style="text-align:left">${esc(x.n)}</td><td style="text-align:left">${x.type}</td><td style="text-align:left">${env?'max/min of ':''}${def}</td></tr>`;
+  }).join('');
+  return `<div class="note"><b>Patterns written (${last.patterns.length}):</b> ${last.patterns.map(esc).join(', ')||'none'}</div>`+
+    `<div class="note"><b>${c.length} combinations</b> from the selected patterns. Combos that would lose all their non-dead loads, or reference an unselected pattern only, are omitted; combos that lose some patterns are renamed to what they actually contain. D, W, T, EQ are the base combinations the others build on.</div>`+
+    `<table class="tbl"><tr><th>#</th><th>Combination</th><th>Type</th><th>Definition</th></tr>${rows}</table>`;
+}
+function drawAll(){
+  let m;
+  try{ m=readModel(); }
+  catch(e){ ['geom','loads','combos','secs'].forEach(k=>$('tab-'+k).innerHTML=`<p class="warn">${esc(e.message)}</p>`); return; }
+  try{
+    const f1=v=>(+v).toFixed(v%1?1:0);
+    const uni=a=>a.every(v=>Math.abs(v-a[0])<1e-6);
+    const bd=uni(m.bays)?`${m.bays.length} bays &times; ${f1(m.bays[0])}`:m.bays.map(f1).join(' + ');
+    const dz=m.levels.slice(1).map((z,k)=>z-m.levels[k]);
+    const ld=uni(dz)?`${dz.length} panels &times; ${f1(dz[0])}`:dz.map(f1).join(' + ');
+    $('gridInfo').innerHTML=`Mullions: ${m.nc} lines &mdash; ${bd} mm (width ${f1(m.xs[m.nc-1]-m.xs[0])}). Transoms: ${m.nl} lines &mdash; ${ld} mm (height ${f1(m.levels[m.nl-1]-m.levels[0])}).`;
+    const pcs=m.pieceZ.slice(1).map((z,k)=>f1(z-m.pieceZ[k])).join(' + ');
+    $('mzInfo').innerHTML=`Mullion pieces (end releases at each end): ${pcs} mm. `+(m.extra.length?`Mullion has ${m.extra.length} extra node(s) at Z = ${m.extra.map(f1).join(', ')} mm (segments ${m.mz.slice(1).map((z,k)=>f1(z-m.mz[k])).join(' + ')} mm).`:'No extra mullion nodes: mullion joints are only at transom levels.');
+    const al=m.anchZ;
+    $('fixInfo').innerHTML=`Base fixings on ${m.baseCols.size} of ${m.nc} mullions; anchor elevations: ${al.length?al.map(z=>'Z='+f1(z)).join(', '):'none'} on ${m.anchCols.size} of ${m.nc} mullions (columns ${[...m.anchCols].sort((a,b)=>a-b).map(i=>i+1).join(', ')}).`;
+    $('tab-geom').innerHTML=elevationSVG(m,'geom');
+    $('tab-loads').innerHTML=elevationSVG(m,'load')+'<div style="height:10px"></div>'+sideSVG(m)+loadTable(m);
+    $('tab-combos').innerHTML=comboHTML();
+    $('tab-secs').innerHTML=sectionsHTML(m);
+  }catch(e){ $('tab-geom').innerHTML=`<p class="warn">Drawing error: ${esc(e.message)}</p>`; }
+}
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  ['geom','loads','combos','secs','text'].forEach(k=>$('tab-'+k).hidden=(k!==b.dataset.t));
+}));
+let _t=null;
+function sched(){ clearTimeout(_t); _t=setTimeout(()=>{run();drawAll();},150); }
+document.addEventListener('input',sched);
+document.addEventListener('change',sched);
+run(); drawAll();
+</script>
+</body>
+</html>
